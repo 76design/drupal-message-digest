@@ -1,8 +1,49 @@
 <?php
 
 /**
+ * Implements hook_cron().
+ * Aggregate, format and send Digest emails.
+ */
+function message_digest_cron() {
+  $last_run = variable_get('message_digest_last_run', 0);
+  if ($last_run > strtotime("-1 days")) {
+    return;
+  }
+
+  if (!$plugin = message_notify_get_notifier('digest')) {
+    throw new MessageNotifyException(format_string('Could not send notification using the "@notifier" notifier.'), array('@notifier' => $notifier_name));
+  }
+  $class = ctools_plugin_load_class('message_notify', 'notifier', 'digest', 'class');
+  $notifier = new $class($plugin, $message);
+
+  // Gather up all the messages into neat little digests.
+  $digests = $notifier->aggregate();
+
+  // Send them on their way.
+  foreach ($digests as $uid => $digest) {
+    $message = $notifier->format($digest);
+    $account = user_load($uid);
+    $lang = !empty($account->language) && $account->language != LANGUAGE_NONE ? $languages[$account->language]: language_default();
+    drupal_mail('message_digest', 'digest', $account->mail, $lang);  // @TODO, NO CONTENT YET.
+  }
+
+  //variable_set('message_digest_last_run', time()); @TODO UNCOMMENT THIS
+}
+
+/**
+ * Implements hook_ctools_plugin_api().
+ */
+function message_digest_ctools_plugin_api($module, $api) {
+  if ($module == 'message_notify' && $api == 'notifier') {
+    return array('version' => 1);
+  }
+}
+
+/**
  * Implements hook_ctools_plugin_directory().
  */
-function message_digest_ctools_plugin_directory($owner, $plugin_type) {
-  return 'plugins/' . $owner . '/' . $plugin_type;
+function message_digest_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'message_notify') {
+    return 'plugins/' . $plugin;
+  }
 }
