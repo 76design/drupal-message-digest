@@ -5,26 +5,27 @@
  * Aggregate, format and send Digest emails.
  */
 function message_digest_cron() {
+  $interval = "1 day"; // @TODO: DO NOT HARDCODE THIS.
   $last_run = variable_get('message_digest_last_run', 0);
-  if ($last_run > strtotime("-1 days")) {
+  if ($last_run > strtotime("-" . $interval)) {
     return;
   }
 
-  if (!$plugin = message_notify_get_notifier('digest')) {
-    throw new MessageNotifyException(format_string('Could not send notification using the "@notifier" notifier.'), array('@notifier' => $notifier_name));
-  }
-  $class = ctools_plugin_load_class('message_notify', 'notifier', 'digest', 'class');
-  $notifier = new $class($plugin, $message);
+  foreach (message_notify_get_notifiers() as $plugin_name => $plugin) {
+    if (strpos($plugin_name, 'digest') === FALSE) {
+      // Only load the "Digest" notifiers and skip the rest.
+      continue;
+    }
+    $plugin = message_notify_get_notifier($plugin_name);
+    $class = ctools_plugin_load_class('message_notify', 'notifier', $plugin_name, 'class');
+    $notifier = new $class($plugin, new Message());
 
-  // Gather up all the messages into neat little digests.
-  $digests = $notifier->aggregate();
-
-  // Send them on their way.
-  foreach ($digests as $uid => $digest) {
-    $message = $notifier->format($digest);
-    $account = user_load($uid);
-    $lang = !empty($account->language) && $account->language != LANGUAGE_NONE ? $languages[$account->language]: language_default();
-    drupal_mail('message_digest', 'digest', $account->mail, $lang);  // @TODO, NO CONTENT YET.
+    // Gather up all the messages into neat little digests and send 'em out.
+    $digests = $notifier->aggregate();
+    foreach ($digests as $uid => $messages) {
+      $formatted_messages = $notifier->format($messages);
+      $result = $notifier->deliverDigest($uid, $formatted_message);
+    }
   }
 
   //variable_set('message_digest_last_run', time()); @TODO UNCOMMENT THIS
