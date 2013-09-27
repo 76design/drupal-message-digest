@@ -5,30 +5,45 @@
  * Aggregate, format and send Digest emails.
  */
 function message_digest_cron() {
-  $interval = "1 day"; // @TODO: DO NOT HARDCODE THIS.
-  $last_run = variable_get('message_digest_last_run', 0);
-  if ($last_run > strtotime("-" . $interval)) {
-    return;
-  }
-
   foreach (message_notify_get_notifiers() as $plugin_name => $plugin) {
     if (strpos($plugin_name, 'digest') === FALSE) {
       // Only load the "Digest" notifiers and skip the rest.
       continue;
     }
+
     $plugin = message_notify_get_notifier($plugin_name);
     $class = ctools_plugin_load_class('message_notify', 'notifier', $plugin_name, 'class');
     $notifier = new $class($plugin, new Message());
+    $interval = $notifier->getInterval();
+    $last_run = variable_get('message_digest_' . $interval . '_last_run', 0);
+
+    if ($last_run > strtotime("-" . $interval)) {
+      // Not time to run this again yet. Wait until the interval has elapsed.
+      continue;
+    }
 
     // Gather up all the messages into neat little digests and send 'em out.
     $digests = $notifier->aggregate();
-    foreach ($digests as $uid => $messages) {
-      $formatted_messages = $notifier->format($messages);
-      $result = $notifier->deliverDigest($uid, $formatted_message);
+    foreach ($digests as $uid => $groups) {
+      foreach($groups as $gid => $messages) {
+        $formatted_messages = $notifier->format($messages);
+        $result = $notifier->deliverDigest($uid, $formatted_message);
+      }
+      $notifier->markSent($uid, $plugin_name);
     }
+    //variable_set('message_digest_' . $interval . '_last_run', time()); // @TODO: UNCOMMENT THIS
   }
+}
 
-  //variable_set('message_digest_last_run', time()); @TODO UNCOMMENT THIS
+/**
+ * Implements hook_mail()
+ */
+function message_digest_mail($key, &$message, $params) {
+  if ($key == 'digest') {
+    $site_name = variable_get('site_name', 'Open Atrium');
+    $message['subject'] = $site_name . t(' Message Digest');
+    $message['body'][] = $params['body'];
+  }
 }
 
 /**
