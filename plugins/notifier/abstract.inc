@@ -94,10 +94,13 @@ class MessageDigest extends MessageNotifierBase {
   /**
    * Send the actual digest email.
    */
-  public function deliverDigest($uid, $formatted_message) {
+  public function deliverDigest($uid, $gid, $formatted_message) {
     $account = user_load($uid);
     $lang = !empty($account->language) && $account->language != LANGUAGE_NONE ? $languages[$account->language] : language_default();
-    $params = array('body' => $formatted_message);
+    $params = array(
+      'body' => $formatted_message,
+      'gid' => $gid
+    );
     drupal_mail('message_digest', 'digest', $account->mail, $lang, $params);  // @TODO, USE message_notify_send_message() INSTEAD.
   }
 

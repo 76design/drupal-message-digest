@@ -27,7 +27,7 @@ function message_digest_cron() {
     foreach ($digests as $uid => $groups) {
       foreach($groups as $gid => $messages) {
         $formatted_messages = $notifier->format($messages);
-        $result = $notifier->deliverDigest($uid, $formatted_messages);
+        $result = $notifier->deliverDigest($uid, $gid, $formatted_messages);
       }
       $notifier->markSent($uid, $plugin_name);
     }
@@ -40,9 +40,13 @@ function message_digest_cron() {
  */
 function message_digest_mail($key, &$message, $params) {
   if ($key == 'digest') {
-    $site_name = variable_get('site_name', 'Open Atrium'); // @TODO: USE THE NAME OF THE GROUP/SPACE HERE IF IT EXISTS.
+    $title = variable_get('site_name', 'Open Atrium'); // @TODO: USE THE NAME OF THE GROUP/SPACE HERE IF IT EXISTS.
+    if (!empty($params['gid'])) {
+      $group = node_load($params['gid']);
+      $title = $group->title;
+    }
     $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed';
-    $message['subject'] = $site_name . t(' Message Digest');
+    $message['subject'] = $title . t(' Message Digest');
     $message['body'][] = $params['body'];
   }
 }
