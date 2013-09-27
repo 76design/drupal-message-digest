@@ -91,6 +91,9 @@ class MessageDigest extends MessageNotifierBase {
     return implode('<hr />', $output_array); // @TODO: Use a theme function + template for this.
   }
 
+  /**
+   * Send the actual digest email.
+   */
   public function deliverDigest($uid, $formatted_message) {
     $account = user_load($uid);
     $lang = !empty($account->language) && $account->language != LANGUAGE_NONE ? $languages[$account->language] : language_default();
@@ -98,9 +101,12 @@ class MessageDigest extends MessageNotifierBase {
     drupal_mail('message_digest', 'digest', $account->mail, $lang, $params);  // @TODO, USE message_notify_send_message() INSTEAD.
   }
 
+  /**
+   * Mark the sent digest messages as sent in the message_digest DB table.
+   */
   public function markSent($uid, $plugin_name) {
     $num_rows = db_update('message_digest')
-      ->fields(array('sent' => 1))
+      ->fields(array('sent' => TRUE))
       ->condition('receiver', $uid)
       ->condition('notifier', $plugin_name)
       ->execute();
