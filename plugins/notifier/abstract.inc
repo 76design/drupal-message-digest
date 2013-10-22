@@ -62,6 +62,9 @@ class MessageDigest extends MessageNotifierBase {
 
     foreach ($result as $row) {
       $gid = $row->gid;
+      if (empty($gid)) {
+        $gid = 0;
+      }
       $account = user_load($row->receiver);
       if (!empty($account->data['digest_grouping']) && $account->data['digest_grouping'] == 'global') {
         // Allow users to group all groups together in the same digest.
