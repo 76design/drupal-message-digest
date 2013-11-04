@@ -21,7 +21,7 @@ class MessageDigest extends MessageNotifierBase {
       'timestamp' => $message->timestamp,
     );
     // This will only have a value if the message is not a message_subscribe message.
-    $mid = $message->mid;
+    $mid = isset($message->mid) ? $message->mid : NULL;
 
     // Our $message is a cloned copy of the original $message with the mid field removed to
     // prevent overwriting (this happens in message_subscribe) so we need to fetch the mid manually.
