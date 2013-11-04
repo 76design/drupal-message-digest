@@ -89,6 +89,9 @@ class MessageDigest extends MessageNotifierBase {
     $output_array = array();
     foreach ($digest as $mid) {
       $message = message_load($mid);
+      if (empty($message) || !is_object($message)) {
+        continue;
+      }
       $build = $message->view();
       $build += array(
         '#theme' => 'message',
