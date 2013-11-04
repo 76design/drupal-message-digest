@@ -87,18 +87,18 @@ class MessageDigest extends MessageNotifierBase {
    */
   public function format($digest) {
     $output_array = array();
+    // There should only be one view_mode for each message_digest plugin,
+    // but just in case, we grab just the first one.
+    $view_modes = $this->plugin['view_modes'];
+    reset($view_modes);
+    $view_mode = key($view_modes);
     foreach ($digest as $mid) {
       $message = message_load($mid);
       if (empty($message) || !is_object($message)) {
         continue;
       }
-      $build = $message->view();
-      $build += array(
-        '#theme' => 'message',
-        '#entity' => $message,
-        '#view_mode' => 'message_notify_email_subject', // @TODO: Default to the "Email Subject" view mode but use the Message Digest view mode if it is customized.
-      );
-      $output_array[] = drupal_render($build);
+      $content = $message->buildContent($view_mode);
+      $output_array[] = render($content);
     }
     return implode('<hr />', $output_array); // @TODO: Use a theme function + template for this.
   }
