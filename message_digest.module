@@ -32,10 +32,11 @@ function message_digest_cron() {
           'view_modes' => $plugin['view_modes'],
           'deliver' => TRUE,  // set to FALSE to prevent delivery
           'plugin' => $plugin, // reference only
+          'messages' => $messages,
         );
         drupal_alter('message_digest_view_mode', $context);
         if ($context['deliver']) {
-          $formatted_messages = $notifier->format($messages, $context['view_modes']);
+          $formatted_messages = $notifier->format($context['messages'], $context['view_modes']);
           $result = $notifier->deliverDigest($uid, $context['gid'], $formatted_messages);
         }
       }

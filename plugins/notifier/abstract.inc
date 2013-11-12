@@ -79,7 +79,9 @@ class MessageDigest extends MessageNotifierBase {
         'plugin' => $this->plugin, // reference only
       );
       drupal_alter('message_digest_aggregate', $context);
-      $message_groups[$context['data']->receiver][$context['gid']][] = $context['data']->mid;
+      if (!empty($context['data']->mid)) {
+        $message_groups[$context['data']->receiver][$context['gid']][] = $context['data']->mid;
+      }
     }
     return $message_groups;
   }
