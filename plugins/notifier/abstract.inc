@@ -76,9 +76,9 @@ class MessageDigest extends MessageNotifierBase {
         'account' => $account,  // reference only
         'data' => $row,
         'gid' => $gid,  // set this to zero to aggregate group content
-        'notifier' => $this, // reference only
+        'plugin' => $this->plugin, // reference only
       );
-      drupal_alter('message_digest_aggregate', $context)
+      drupal_alter('message_digest_aggregate', $context);
       $message_groups[$context['data']->receiver][$context['gid']][] = $context['data']->mid;
     }
     return $message_groups;
@@ -88,22 +88,28 @@ class MessageDigest extends MessageNotifierBase {
    * Given an array of mids, build the full message content for them
    * and combine them into one blob of email content.
    */
-  public function format($digest) {
+  public function format($digest, $view_modes) {
     $output_array = array();
-    // There should only be one view_mode for each message_digest plugin,
-    // but just in case, we grab just the first one.
-    $view_modes = $this->plugin['view_modes'];
-    reset($view_modes);
-    $view_mode = key($view_modes);
     foreach ($digest as $mid) {
       $message = message_load($mid);
       if (empty($message) || !is_object($message)) {
         continue;
       }
-      $content = $message->buildContent($view_mode);
-      $output_array[] = render($content);
+      $rows = array();
+      foreach ($view_modes as $view_mode) {
+        $content = $message->buildContent($view_mode);
+        $rows[$view_mode] = render($content);
+      }
+      $output_array[] = theme('message_digest_row', array(
+        'rows' => $rows,
+        'plugin' => $this->plugin,
+        'message' => $message,
+      ));
     }
-    return implode('<hr />', $output_array); // @TODO: Use a theme function + template for this.
+    return theme('message_digest', array(
+      'messages' => $output_array,
+      'plugin' => $this->plugin,
+    ));
   }
 
   /**
