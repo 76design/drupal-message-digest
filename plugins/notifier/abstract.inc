@@ -72,11 +72,14 @@ class MessageDigest extends MessageNotifierBase {
         $gid = 0;
       }
       $account = user_load($row->receiver);
-      if (!empty($account->data['digest_grouping']) && $account->data['digest_grouping'] == 'global') {
-        // Allow users to group all groups together in the same digest.
-        $gid = 0;
-      }
-      $message_groups[$row->receiver][$row->gid][] = $row->mid;
+      $context = array(
+        'account' => $account,  // reference only
+        'data' => $row,
+        'gid' => $gid,  // set this to zero to aggregate group content
+        'notifier' => $this, // reference only
+      );
+      drupal_alter('message_digest_aggregate', $context)
+      $message_groups[$context['data']->receiver][$context['gid']][] = $context['data']->mid;
     }
     return $message_groups;
   }
