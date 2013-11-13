@@ -40,9 +40,9 @@ function message_digest_cron() {
           $result = $notifier->deliverDigest($uid, $context['gid'], $formatted_messages);
         }
       }
-      //$notifier->markSent($uid, $plugin_name);
+      $notifier->markSent($uid, $plugin_name);
     }
-    //variable_set('message_digest_' . $interval . '_last_run', time());
+    variable_set('message_digest_' . $interval . '_last_run', time());
   }
 }
 
