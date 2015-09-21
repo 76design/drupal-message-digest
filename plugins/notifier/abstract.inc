@@ -82,11 +82,7 @@ class MessageDigest extends MessageNotifierBase {
   public function aggregate() {
     $message_groups = array();
 
-    $query = db_select('message_digest', 'md');
-    $query->fields('md');
-    $query->condition('sent', FALSE);
-    $query->condition('notifier', $this->plugin['name']);
-    $result = $query->execute();
+    $result = $this->fetchPendingDigestMessages();
 
     foreach ($result as $row) {
       $gid = $row->gid;
@@ -105,7 +101,19 @@ class MessageDigest extends MessageNotifierBase {
         $message_groups[$context['data']->receiver][$context['gid']][] = $context['data']->mid;
       }
     }
+
     return $message_groups;
+  }
+
+  protected function fetchPendingDigestMessages() {
+    $query = db_select('message_digest', 'md');
+    $query->fields('md');
+    $query->condition('sent', FALSE);
+    $query->condition('notifier', $this->plugin['name']);
+
+    //TODO: Use getLastRunTimestamp?
+
+    return $query->execute();
   }
 
   /**
@@ -140,14 +148,11 @@ class MessageDigest extends MessageNotifierBase {
    * Send the actual digest email.
    */
   public function deliverDigest($uid, $gid, $formatted_message) {
-    $languages = language_list();
-
     $account = user_load($uid);
+    $languages = language_list();
     $lang = !empty($account->language) && $account->language != LANGUAGE_NONE ? $languages[$account->language] : language_default();
-    $params = array(
-      'body' => $formatted_message,
-      'gid' => $gid
-    );
+    $params = $this->formatMessageParams($gid, $formatted_message);
+
     drupal_mail('message_digest', 'digest', $account->mail, $lang, $params);  // @TODO, USE message_notify_send_message() INSTEAD.
   }
 
@@ -160,5 +165,14 @@ class MessageDigest extends MessageNotifierBase {
       ->condition('receiver', $uid)
       ->condition('notifier', $plugin_name)
       ->execute();
+  }
+
+  protected function formatMessageParams($gid, $formatted_message) {
+    $params = array(
+        'body' => $formatted_message,
+        'gid'  => $gid
+    );
+
+    return $params;
   }
 }
