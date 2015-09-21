@@ -61,7 +61,6 @@ class MessageDigest extends MessageNotifierBase {
 
     $query = db_select('message_digest', 'md');
     $query->fields('md');
-    $query->condition('timestamp', $start, '>');
     $query->condition('sent', FALSE);
     $query->condition('notifier', $this->plugin['name']);
     $result = $query->execute();
