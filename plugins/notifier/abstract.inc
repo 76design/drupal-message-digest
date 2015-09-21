@@ -118,6 +118,8 @@ class MessageDigest extends MessageNotifierBase {
    * Send the actual digest email.
    */
   public function deliverDigest($uid, $gid, $formatted_message) {
+    $languages = language_list();
+
     $account = user_load($uid);
     $lang = !empty($account->language) && $account->language != LANGUAGE_NONE ? $languages[$account->language] : language_default();
     $params = array(
