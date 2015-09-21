@@ -50,17 +50,29 @@ class MessageDigest extends MessageNotifierBase {
     return '1 day';
   }
 
-  public function shouldRun() {
+  public function getLastRunTimestamp() {
     $interval = $this->getInterval();
-    $last_run = variable_get('message_digest_' . $interval . '_last_run', 0);
-    $interval_ts = strtotime("-" . $interval);
+    return variable_get('message_digest_' . $interval . '_last_run', 0);
+  }
+
+  public function setLastRunTimestamp($timestamp) {
+    $interval = $this->getInterval();
+    variable_set('message_digest_' . $interval . '_last_run', $timestamp);
+  }
+
+  protected function getIntervalTimestamp($interval) {
+    return strtotime("-" . $interval);
+  }
+
+  public function shouldRun() {
+    $last_run = $this->getLastRunTimestamp();
+    $interval_ts = $this->getIntervalTimestamp($this->getInterval());
 
     return $interval_ts >= $last_run;
   }
 
-  public function markRun($timestamp) {
-    $interval = $this->getInterval();
-    variable_set('message_digest_' . $interval . '_last_run', $timestamp);
+  public function markRun($timestamp, $digests = null) {
+    $this->setLastRunTimestamp($timestamp);
   }
 
   /**
