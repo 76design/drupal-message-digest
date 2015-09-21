@@ -50,13 +50,24 @@ class MessageDigest extends MessageNotifierBase {
     return '1 day';
   }
 
+  public function shouldRun() {
+    $interval = $this->getInterval();
+    $last_run = variable_get('message_digest_' . $interval . '_last_run', 0);
+    $interval_ts = strtotime("-" . $interval);
+
+    return $interval_ts >= $last_run;
+  }
+
+  public function markRun($timestamp) {
+    $interval = $this->getInterval();
+    variable_set('message_digest_' . $interval . '_last_run', $timestamp);
+  }
+
   /**
    * Aggregate all of the messages for this interval and notifier that haven't
    * already been sent, and group them by user and then by group.
    */
   public function aggregate() {
-    $interval = $this->getInterval();
-    $start = strtotime('-' . $interval); // Invert $interval since it's in the past.
     $message_groups = array();
 
     $query = db_select('message_digest', 'md');

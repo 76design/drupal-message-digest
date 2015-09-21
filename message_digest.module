@@ -13,36 +13,34 @@ function message_digest_cron() {
 
     $plugin = message_notify_get_notifier($plugin_name);
     $class = ctools_plugin_load_class('message_notify', 'notifier', $plugin_name, 'class');
+
+    /** @var MessageDigest $notifier */
     $notifier = new $class($plugin, new Message());
-    $interval = $notifier->getInterval();
-    $last_run = variable_get('message_digest_' . $interval . '_last_run', 0);
 
-    if ($last_run > strtotime("-" . $interval)) {
-      // Not time to run this again yet. Wait until the interval has elapsed.
-      continue;
-    }
-
-    // Gather up all the messages into neat little digests and send 'em out.
-    $digests = $notifier->aggregate();
-    foreach ($digests as $uid => $groups) {
-      foreach ($groups as $gid => $messages) {
-        $context = array(
-          'uid' => $uid, // reference only, cannot change
-          'gid' => $gid,
-          'view_modes' => $plugin['view_modes'],
-          'deliver' => TRUE,  // set to FALSE to prevent delivery
-          'plugin' => $plugin, // reference only
-          'messages' => $messages,
-        );
-        drupal_alter('message_digest_view_mode', $context);
-        if ($context['deliver']) {
-          $formatted_messages = $notifier->format($context['messages'], $context['view_modes']);
-          $result = $notifier->deliverDigest($uid, $context['gid'], $formatted_messages);
+    if ($notifier->shouldRun()) {
+      // Gather up all the messages into neat little digests and send 'em out.
+      $digests = $notifier->aggregate();
+      foreach ($digests as $uid => $groups) {
+        foreach ($groups as $gid => $messages) {
+          $context = array(
+              'uid' => $uid, // reference only, cannot change
+              'gid' => $gid,
+              'view_modes' => $plugin['view_modes'],
+              'deliver' => TRUE,  // set to FALSE to prevent delivery
+              'plugin' => $plugin, // reference only
+              'messages' => $messages,
+          );
+          drupal_alter('message_digest_view_mode', $context);
+          if ($context['deliver']) {
+            $formatted_messages = $notifier->format($context['messages'], $context['view_modes']);
+            $result = $notifier->deliverDigest($uid, $context['gid'], $formatted_messages);
+          }
         }
+        $notifier->markSent($uid, $plugin_name);
       }
-      $notifier->markSent($uid, $plugin_name);
+
+      $notifier->markRun(time());
     }
-    variable_set('message_digest_' . $interval . '_last_run', time());
   }
 }
 
