@@ -151,7 +151,10 @@ class MessageDigest extends MessageNotifierBase {
     $account = user_load($uid);
     $languages = language_list();
     $lang = !empty($account->language) && $account->language != LANGUAGE_NONE ? $languages[$account->language] : language_default();
-    $params = $this->formatMessageParams($gid, $formatted_message);
+
+    drupal_alter('message_digest_mail_language', $lang, $account);
+
+    $params = $this->formatMessageParams($gid, $formatted_message, $account, $lang);
 
     drupal_mail('message_digest', 'digest', $account->mail, $lang, $params);  // @TODO, USE message_notify_send_message() INSTEAD.
   }
@@ -167,7 +170,7 @@ class MessageDigest extends MessageNotifierBase {
       ->execute();
   }
 
-  protected function formatMessageParams($gid, $formatted_message) {
+  protected function formatMessageParams($gid, $formatted_message, $account, $lang) {
     $params = array(
         'body' => $formatted_message,
         'gid'  => $gid
