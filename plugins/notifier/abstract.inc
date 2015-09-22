@@ -129,7 +129,7 @@ class MessageDigest extends MessageNotifierBase {
       }
       $rows = array();
       foreach ($view_modes as $view_mode_name => $view_mode) {
-        $content = $message->buildContent($view_mode_name);
+        $content = $message->buildContent($view_mode_name, $message->language);
         $rows[$view_mode_name] = render($content);
       }
       $output_array[] = theme('message_digest_row', array(
